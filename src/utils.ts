@@ -5,6 +5,7 @@ import { Disc, Group, Track } from './services/interfaces/netmd';
 import { createWorker } from '@ffmpeg/ffmpeg';
 import { ForcedEncodingFormat } from './redux/convert-dialog-feature';
 import { HiMDKBPSToFrameSize } from 'himd-js';
+import './services/interfaces/himd-extra-profiles';
 import { SIGNATURES } from 'netmd-tocmanip';
 import { AudioEncoderV1ExportParams } from './services/audio/apiv1/external-interface';
 
