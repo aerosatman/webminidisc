@@ -79,7 +79,7 @@ export interface AudioEncoderV1API {
     ): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | 'ILLEGAL' | null;
     getATRACWAVEncoding(
         fileData: Uint8Array
-    ): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | null
+    ): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number; channels?: 1 | 2 } | null
 }
 
 export interface AudioEncoderV1Metadata {
