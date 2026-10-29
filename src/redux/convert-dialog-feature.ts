@@ -4,7 +4,7 @@ import { enableBatching } from 'redux-batched-actions';
 import { savePreference, loadPreference } from '../utils';
 
 export type TitleFormatType = 'filename' | 'title' | 'album-title' | 'artist-title' | 'artist-album-title' | 'title-artist';
-export type ForcedEncodingFormat = { codec: 'SPM' | 'SPS' | HiMDCodecName; bitrate: number } | null;
+export type ForcedEncodingFormat = { codec: 'SPM' | 'SPS' | HiMDCodecName; bitrate: number; channels?: 1 | 2 } | null;
 
 export interface ConvertDialogFeature {
     visible: boolean;

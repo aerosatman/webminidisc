@@ -45,7 +45,7 @@ export class FfmpegAudioEncoder implements AudioEncoderV1Instance {
     createFfmpegParams(parameters: AudioEncoderV1ExportParams, outputFormat: string, moreParams?: string): string {
         const { enableReplayGain } = parameters;
         let additionalCommands = '';
-        const commonFormatting = `-ac 2 -ar 44100`;
+        const commonFormatting = `-ac ${parameters.format.channels ?? 2} -ar 44100`;
         if (enableReplayGain) {
             additionalCommands += `-af volume=replaygain=track`;
         }

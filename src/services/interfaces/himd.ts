@@ -46,6 +46,7 @@ import {
 import { concatUint8Arrays } from 'netmd-js/dist/utils';
 import { recomputeGroupsAfterTrackMove } from '../../utils';
 import { CryptoBlockProvider, CryptoProvider } from 'himd-js/dist/workers';
+import { normalizeAtrac3plusBitrate } from './himd-extra-profiles';
 
 import WorkerURL from 'himd-js/dist/web-crypto-worker?worker&url';
 
@@ -54,13 +55,14 @@ export class HiMDSpec implements MinidiscSpec {
         this.specName = 'HiMD';
     }
     public availableFormats: RecordingCodec[] = [
-        { codec: 'A3+', availableBitrates: [352, 256, 192, 64, 48], defaultBitrate: 256 },
+        { codec: 'A3+', availableBitrates: [352, 320, 256, 192, 160, 128, 96, 64, 48, 24], defaultBitrate: 256 },
+        { codec: 'A3+', channels: 1, userFriendlyName: 'A3+ Mono', availableBitrates: [128, 96, 64, 48, 32], defaultBitrate: 64 },
         { codec: 'AT3', availableBitrates: [132, 105, 66], defaultBitrate: 132 },
         { codec: 'MP3', availableBitrates: [320, 256, 192, 128, 96, 64], defaultBitrate: 192 },
         { codec: 'PCM', availableBitrates: [1411], defaultBitrate: 1411 },
     ];
     public readonly measurementUnits = 'bytes';
-    public defaultFormat = [0, 1] as [number, number];
+    public defaultFormat = [0, 2] as [number, number]; // A3+ stereo @ 256kbps
     public specName: string;
 
     getRemainingCharactersForTitles(disc: Disc): { halfWidth: number; fullWidth: number } {
@@ -207,7 +209,7 @@ export class HiMDRestrictedService extends NetMDService {
                         title: trk.title ?? '',
                         album: trk.album ?? '',
                         artist: trk.artist ?? '',
-                        encoding: { codec: trk.encoding, bitrate: trk.bitrate },
+                        encoding: { codec: trk.encoding, bitrate: trk.encoding === 'A3+' ? normalizeAtrac3plusBitrate(trk.bitrate) : trk.bitrate },
                         fullWidthTitle: '',
                         protected: TrackFlag.unprotected,
                         channel: 2,
@@ -576,7 +578,7 @@ export class HiMDFullService extends HiMDRestrictedService {
                 default:
                     throw new HiMDError('Invalid format');
             }
-            const codecInfo = generateCodecInfo(format.codec, frameSize);
+            const codecInfo = generateCodecInfo(format.codec, frameSize, format.channels ?? 2);
             let written = 0;
             let encrypted = 0;
             const total = data.byteLength;

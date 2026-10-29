@@ -5,6 +5,7 @@ import { Disc, Group, Track } from './services/interfaces/netmd';
 import { createWorker } from '@ffmpeg/ffmpeg';
 import { ForcedEncodingFormat } from './redux/convert-dialog-feature';
 import { HiMDKBPSToFrameSize } from 'himd-js';
+import './services/interfaces/himd-extra-profiles';
 import { SIGNATURES } from 'netmd-tocmanip';
 import { AudioEncoderV1ExportParams } from './services/audio/apiv1/external-interface';
 
@@ -189,7 +190,7 @@ export function getATRACOMAEncoding(
 
 export function getATRACWAVEncoding(
     fileData: Uint8Array
-): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | null {
+): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number; channels?: 1 | 2 } | null {
     if (fileData.byteLength < 44) return null; // Too short to be a WAV
 
     if (Buffer.from(fileData.slice(0, 4)).toString() !== 'RIFF') return null; // Missing header part 1
@@ -197,7 +198,8 @@ export function getATRACWAVEncoding(
 
     const wavType = Buffer.from(fileData.slice(20, 22)).readUInt16LE(0);
     const channels = Buffer.from(fileData.slice(22, 24)).readUInt16LE(0);
-    if ((wavType !== 0x270 && wavType !== 0xfffe) || channels !== 0x02) return null; // Not ATRAC3
+    if (wavType !== 0x270 && wavType !== 0xfffe) return null; // Not ATRAC3
+    if (channels !== 0x01 && channels !== 0x02) return null;
 
     let headerLength = 12;
     while (headerLength < fileData.byteLength) {
@@ -214,19 +216,22 @@ export function getATRACWAVEncoding(
     const bytesSampleRate = Buffer.from(fileData.slice(24, 28)).readUInt32LE(0);
     const bytesPerFrame = Buffer.from(fileData.slice(32, 34)).readUInt16LE(0) / 2;
     if (bytesSampleRate !== 44100) return null;
-    switch (bytesPerFrame) {
-        case 192:
-            return { format: { codec: 'AT3', bitrate: 132 }, headerLength };
-        case 152:
-            return { format: { codec: 'AT3', bitrate: 105 }, headerLength };
-        case 96:
-            return { format: { codec: 'AT3', bitrate: 66 }, headerLength };
+    // Plain ATRAC3 (LP2/LP4) is stereo only. Mono files can only be ATRAC3plus.
+    if (channels === 2) {
+        switch (bytesPerFrame) {
+            case 192:
+                return { format: { codec: 'AT3', bitrate: 132 }, headerLength };
+            case 152:
+                return { format: { codec: 'AT3', bitrate: 105 }, headerLength };
+            case 96:
+                return { format: { codec: 'AT3', bitrate: 66 }, headerLength };
+        }
     }
 
     for (const [_kbps, fSize] of Object.entries(HiMDKBPSToFrameSize.atrac3plus)) {
         const kbps = parseInt(_kbps);
-        if (fSize === bytesPerFrame * 2 && channels === 2) {
-            return { format: { codec: 'A3+', bitrate: kbps }, headerLength };
+        if (fSize === bytesPerFrame * 2) {
+            return { format: { codec: 'A3+', bitrate: kbps }, headerLength, ...(channels === 1 ? { channels: 1 as const } : {}) };
         }
     }
     return null;

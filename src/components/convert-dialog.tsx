@@ -332,8 +332,12 @@ export const ConvertDialog = (props: { files: (File | AdaptiveFile)[] }) => {
                         const file = _file as File;
                         const metadata = await getMetadataFromFile(file);
                         const fileContents = new Uint8Array(await file.arrayBuffer());
-                        let forcedEncoding: null | 'ILLEGAL' | { format: ForcedEncodingFormat; headerLength: number } =
-                            getATRACWAVEncoding(fileContents);
+                        const detectedWav = getATRACWAVEncoding(fileContents);
+                        let forcedEncoding: null | 'ILLEGAL' | { format: ForcedEncodingFormat; headerLength: number } = detectedWav && {
+                            // Keep the channel count, so pre-encoded mono files are not uploaded as stereo.
+                            format: { ...detectedWav.format, ...(detectedWav.channels === 1 ? { channels: 1 as const } : {}) },
+                            headerLength: detectedWav.headerLength,
+                        };
                         if (file.name.toLowerCase().endsWith('.aea')) {
                             const channels = await getChannelsFromAEA(file);
                             if (channels === 1 || channels === 2) {
@@ -976,9 +980,7 @@ export const ConvertDialog = (props: { files: (File | AdaptiveFile)[] }) => {
                                         input={<Input />}
                                         onChange={handleChangeBitrate}
                                     >
-                                        {minidiscSpec.availableFormats
-                                            .find((e) => e.codec === currentlySelectedCodec.codec)!
-                                            .availableBitrates!.map((e) => (
+                                        {currentlySelectedCodecFamily.availableBitrates.map((e) => (
                                                 <MenuItem value={e} key={`bitratesel-${e}`}>
                                                     {e} Kbps
                                                 </MenuItem>

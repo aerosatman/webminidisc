@@ -98,11 +98,15 @@ export interface RecordingCodec {
     availableBitrates: number[];
     userFriendlyName?: string;
     displayBadgeFriendlyName?: string;
+    // Channel count of this recording mode. Unset means stereo.
+    channels?: 1 | 2;
 }
 
 export interface Codec {
     codec: CodecFamily;
     bitrate: number;
+    // Unset means stereo.
+    channels?: 1 | 2;
 }
 
 export interface Track {
@@ -153,10 +157,13 @@ export interface MinidiscSpec {
 }
 
 export function getCodecFromIndex(spec: MinidiscSpec, index: [number, number]): Codec {
-    return {
-        codec: spec.availableFormats[index[0]].codec,
-        bitrate: spec.availableFormats[index[0]].availableBitrates[index[1]],
+    const family = spec.availableFormats[index[0]];
+    const codec: Codec = {
+        codec: family.codec,
+        bitrate: family.availableBitrates[index[1]],
     };
+    if (family.channels !== undefined) codec.channels = family.channels;
+    return codec;
 }
 
 export function getDefaultCodec(spec: MinidiscSpec): Codec {

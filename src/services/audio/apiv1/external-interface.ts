@@ -12,7 +12,8 @@ export type BuiltinEncoderID = 'ffmpeg';
 export type AudioEncoderV1ExportCodec = 'AT3' | 'A3+' | 'PCM' | 'MP3';
 
 export type AudioEncoderV1ExportParams = {
-    format: { bitrate: number; codec: AudioEncoderV1ExportCodec };
+    // `channels` is only set for non-stereo recording modes (e.g. HiMD A3+ mono). Unset means stereo.
+    format: { bitrate: number; codec: AudioEncoderV1ExportCodec; channels?: 1 | 2 };
     enableReplayGain?: boolean;
     writeGapless: boolean;
 };
@@ -30,6 +31,7 @@ export interface PublicFfmpegAudioEncoderV1 extends AudioEncoderV1Instance {
 export function transferCodecToExportCodec(format: {
     bitrate: number;
     codec: 'SPS' | 'SPM' | AudioEncoderV1ExportCodec;
+    channels?: 1 | 2;
 }): AudioEncoderV1ExportParams['format'] {
     switch (format.codec) {
         case 'SPM':
@@ -77,7 +79,7 @@ export interface AudioEncoderV1API {
     ): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | 'ILLEGAL' | null;
     getATRACWAVEncoding(
         fileData: Uint8Array
-    ): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | null
+    ): { format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number; channels?: 1 | 2 } | null
 }
 
 export interface AudioEncoderV1Metadata {
